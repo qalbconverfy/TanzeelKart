@@ -10,13 +10,13 @@ from loguru import logger
 
 
 # Async Engine
+from sqlalchemy.pool import NullPool
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    poolclass=NullPool if settings.DEBUG else None,
+    poolclass=NullPool,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
 )
 
 # Session Factory
