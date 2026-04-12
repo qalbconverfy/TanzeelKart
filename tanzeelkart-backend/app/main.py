@@ -18,6 +18,7 @@ from app.core.exceptions import TanzeelKartException
 from app.api.v1.auth.router import router as auth_router
 from app.api.v1.users.router import router as users_router
 from app.api.v1.shops.router import router as shops_router
+from app.api.v1.products.router import router as products_router
 from app.api.v1.orders.router import router as orders_router
 from app.api.v1.delivery.router import router as delivery_router
 from app.api.v1.weather.router import router as weather_router
@@ -123,6 +124,11 @@ app.include_router(
     auth_router,
     prefix=f"{settings.API_V1_PREFIX}/auth",
     tags=["Authentication"]
+)
+app.include_router(
+    products_router,
+    prefix=f"{settings.API_V1_PREFIX}/products",
+    tags=["Products"]
 )
 app.include_router(
     users_router,
