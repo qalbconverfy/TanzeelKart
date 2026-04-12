@@ -1,33 +1,37 @@
 from app.core.config import settings
 from loguru import logger
 import httpx
+import re
 
 
 async def send_sms(phone: str, message: str) -> bool:
     try:
+        # OTP extract karo message se
+        otp_match = re.search(r'\d{6}', message)
+        otp = otp_match.group() if otp_match else message
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://www.fast2sms.com/dev/bulkV2",
                 headers={
                     "authorization": settings.SMS_API_KEY,
-                    "Content-Type": "application/json"
                 },
-                json={
+                params={
                     "route": "otp",
-                    "variables_values": message.split(":")[1].strip().split(".")[0].strip(),
+                    "variables_values": otp,
                     "flash": 0,
                     "numbers": phone,
                 },
                 timeout=10.0
             )
             data = response.json()
-            logger.info(f"SMS response: {data}")
+            logger.info(f"Fast2SMS response: {data}")
 
-            if data.get("return"):
-                logger.info(f"✅ SMS sent to {phone}")
+            if data.get("return") == True:
+                logger.info(f"✅ OTP sent to {phone}")
                 return True
             else:
-                logger.error(f"SMS failed: {data}")
+                logger.error(f"❌ SMS failed: {data}")
                 return False
 
     except Exception as e:
