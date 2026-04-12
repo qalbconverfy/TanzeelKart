@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     SECRET_KEY: str
-    ALLOWED_HOSTS: List[str] = ["*"]
+    ALLOWED_HOSTS: List[str] = ["https://tanzeel-kart.vercel.app"]
     API_V1_PREFIX: str = "/api/v1"
 
     # Database
