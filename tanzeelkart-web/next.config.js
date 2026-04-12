@@ -1,11 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['*']
+    }
+  },
   images: {
     domains: [
       'i.ytimg.com',
       'img.youtube.com',
       'res.cloudinary.com',
-      'lh3.googleusercontent.com',
     ],
   },
   env: {
