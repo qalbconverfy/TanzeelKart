@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, String, Boolean,
-    Enum, Float, Text, Integer
+    Enum, Float, Text
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -20,15 +20,6 @@ class UserStatus(str, enum.Enum):
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
     PENDING = "pending"
-
-
-class AccountType(str, enum.Enum):
-    SHOP = "shop"
-    MEDICAL = "medical"
-    NORMAL = "normal"
-    ALL_TYPES = "all_types"
-    SKIP = "skip"
-    ADMIN = "admin"
 
 
 class User(BaseModel):
@@ -51,15 +42,6 @@ class User(BaseModel):
         default=UserStatus.PENDING,
         nullable=False
     )
-
-    # Account Type
-    account_type = Column(
-        Enum(AccountType),
-        default=AccountType.SKIP,
-        nullable=True
-    )
-    is_verified = Column(Boolean, default=False)
-    verification_layer = Column(Integer, default=0)
 
     # Location
     latitude = Column(Float, nullable=True)
@@ -95,3 +77,4 @@ class User(BaseModel):
     )
     udhaar_records = relationship("Udhaar", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
+    
