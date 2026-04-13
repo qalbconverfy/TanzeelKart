@@ -178,6 +178,15 @@ export const shopAPI = {
     api.get(`/api/v1/shops/${id}`),
 }
 
+// Email + Guest
+emailRegister: (data) =>
+    api.post('/api/v1/auth/email/register', data),
+
+emailLogin: (data) =>
+    api.post('/api/v1/auth/email/login', data),
+
+guestLogin: () =>
+    api.post('/api/v1/auth/guest/login'),
 // ─────────────────────────────────────────
 // Product APIs
 // ─────────────────────────────────────────
