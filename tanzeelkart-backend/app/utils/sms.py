@@ -23,21 +23,21 @@ async def send_sms(phone: str, message: str) -> bool:
         logger.info(f"🔑 API Key: {settings.SMS_API_KEY[:10]}...")
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://www.fast2sms.com/dev/bulkV2",
-                headers={
-                    "authorization": settings.SMS_API_KEY,
-                    "Cache-Control": "no-cache",
-                },
-                params={
-                    "route": "q",
-                    "message": sms_message,
-                    "language": "english",
-                    "flash": 0,
-                    "numbers": phone,
-                },
-                timeout=15.0
-            )
+    response = await client.post(
+        "https://www.fast2sms.com/dev/bulkV2",
+        headers={
+            "authorization": settings.SMS_API_KEY,
+            "Cache-Control": "no-cache",
+        },
+        json={
+            "route": "q",
+            "message": sms_message,
+            "language": "english",
+            "flash": "0",
+            "numbers": phone,
+        },
+        timeout=15.0
+    )
 
             data = response.json()
             logger.info(f"Fast2SMS: {data}")
