@@ -470,6 +470,133 @@ async def _create_admin_token(
 
 
 # ─────────────────────────────────────────
+# Email Register
+# ─────────────────────────────────────────
+
+async def email_register(
+    payload: schemas.EmailRegisterRequest,
+    db: AsyncSession,
+) -> dict:
+    # Email already exists?
+    result = await db.execute(
+        select(User).where(User.email == payload.email)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        raise DuplicateException("Email already registered")
+
+    user = User(
+        id=uuid.uuid4(),
+        email=payload.email,
+        full_name=payload.full_name,
+        phone="",
+        hashed_password=get_password_hash(payload.password),
+        role=UserRole.BUYER,
+        status=UserStatus.ACTIVE,
+        is_email_verified=False,
+        account_type=AccountType.SKIP,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    access_token = create_access_token(str(user.id))
+    refresh_token = create_refresh_token(str(user.id))
+
+    logger.info(f"✅ Email register: {payload.email}")
+
+    return {
+        "success": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user_id": str(user.id),
+        "role": user.role.value,
+        "is_new_user": True,
+    }
+
+
+# ─────────────────────────────────────────
+# Email Login
+# ─────────────────────────────────────────
+
+async def email_login(
+    payload: schemas.EmailLoginRequest,
+    db: AsyncSession,
+) -> dict:
+    result = await db.execute(
+        select(User).where(User.email == payload.email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise AuthException("Email registered nahi hai")
+
+    if not user.hashed_password:
+        raise AuthException("Password login available nahi")
+
+    if not verify_password(payload.password, user.hashed_password):
+        raise AuthException("Password galat hai")
+
+    if user.status == UserStatus.SUSPENDED:
+        raise AuthException("Account suspended hai")
+
+    access_token = create_access_token(str(user.id))
+    refresh_token = create_refresh_token(str(user.id))
+
+    logger.info(f"✅ Email login: {payload.email}")
+
+    return {
+        "success": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user_id": str(user.id),
+        "role": user.role.value,
+        "account_type": user.account_type.value if user.account_type else None,
+        "is_verified": user.is_verified,
+    }
+
+
+# ─────────────────────────────────────────
+# Guest Login
+# ─────────────────────────────────────────
+
+async def guest_login(
+    db: AsyncSession,
+) -> dict:
+    # Guest user banao
+    guest_id = uuid.uuid4()
+    guest = User(
+        id=guest_id,
+        phone="",
+        full_name="Guest User",
+        email=None,
+        role=UserRole.BUYER,
+        status=UserStatus.ACTIVE,
+        is_phone_verified=False,
+        account_type=AccountType.SKIP,
+    )
+    db.add(guest)
+    await db.commit()
+
+    access_token = create_access_token(str(guest_id))
+    refresh_token = create_refresh_token(str(guest_id))
+
+    logger.info(f"✅ Guest login: {guest_id}")
+
+    return {
+        "success": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user_id": str(guest_id),
+        "role": "buyer",
+        "is_guest": True,
+    }
+
+
+# ─────────────────────────────────────────
 # Refresh + Logout
 # ─────────────────────────────────────────
 
