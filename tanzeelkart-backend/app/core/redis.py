@@ -31,7 +31,6 @@ async def get_redis() -> aioredis.Redis:
     return redis_client
 
 
-# Cache helpers
 async def set_cache(key: str, value: dict, expire: int = 300):
     await redis_client.setex(key, expire, json.dumps(value))
 
@@ -47,14 +46,20 @@ async def delete_cache(key: str):
 
 async def set_otp(phone: str, otp: str, expire: int = 600):
     key = f"otp:{phone}"
-    await redis_client.setex(key, expire, otp)
+    # String ke roop mein save karo
+    await redis_client.setex(key, expire, str(otp))
+    logger.info(f"✅ OTP saved: {key} = {otp}")
 
 
 async def get_otp(phone: str) -> Optional[str]:
     key = f"otp:{phone}"
-    return await redis_client.get(key)
+    value = await redis_client.get(key)
+    logger.info(f"🔍 OTP fetched: {key} = {value}")
+    # String return karo
+    return str(value).strip() if value else None
 
 
 async def delete_otp(phone: str):
     key = f"otp:{phone}"
     await redis_client.delete(key)
+    logger.info(f"🗑️ OTP deleted: {key}")
