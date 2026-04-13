@@ -38,7 +38,12 @@ async def send_otp(
     background_tasks: BackgroundTasks,
 ) -> schemas.OTPResponse:
     otp = generate_otp()
-    await set_otp(payload.phone, otp)
+
+    # OTP Redis mein save karo — string ke roop mein
+    await set_otp(payload.phone, str(otp))
+
+    # Log karo debugging ke liye
+    logger.info(f"🔑 Generated OTP: {otp} for {payload.phone}")
 
     message = (
         f"TanzeelKart OTP: {otp}. "
@@ -55,21 +60,38 @@ async def send_otp(
 
 
 async def verify_otp(
-    payload: schemas.VerifyOTPRequest,
+    payload: VerifyOTPRequest,
     db: AsyncSession,
     redis: aioredis.Redis,
 ) -> schemas.TokenResponse:
-    stored_otp = await get_otp(payload.phone)
+
+    # Phone aur OTP clean karo
+    phone = str(payload.phone).strip()
+    entered_otp = str(payload.otp).strip()
+
+    # Redis se stored OTP lo
+    stored_otp = await get_otp(phone)
+
+    # Debug logs
+    logger.info(f"📱 Phone: {phone}")
+    logger.info(f"🔑 Stored OTP: {stored_otp}")
+    logger.info(f"✏️ Entered OTP: {entered_otp}")
 
     if not stored_otp:
-        raise AuthException("OTP expired or not found")
-    if stored_otp != payload.otp:
-        raise AuthException("Invalid OTP")
+        raise AuthException(
+            "OTP expire ho gaya — dobara bhejo"
+        )
 
-    await delete_otp(payload.phone)
+    # String comparison — dono ko str mein convert karo
+    if str(stored_otp).strip() != str(entered_otp).strip():
+        raise AuthException("OTP galat hai")
 
+    # OTP delete karo — ek baar use ho sakta hai
+    await delete_otp(phone)
+
+    # User dhundo ya banao
     result = await db.execute(
-        select(User).where(User.phone == payload.phone)
+        select(User).where(User.phone == phone)
     )
     user = result.scalar_one_or_none()
     is_new_user = False
@@ -77,7 +99,7 @@ async def verify_otp(
     if not user:
         user = User(
             id=uuid.uuid4(),
-            phone=payload.phone,
+            phone=phone,
             full_name="",
             role=UserRole.BUYER,
             status=UserStatus.ACTIVE,
@@ -88,7 +110,7 @@ async def verify_otp(
         await db.commit()
         await db.refresh(user)
         is_new_user = True
-        logger.info(f"New user: {payload.phone}")
+        logger.info(f"✅ New user: {phone}")
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
@@ -98,6 +120,8 @@ async def verify_otp(
         60 * 60 * 24 * 7,
         refresh_token
     )
+
+    logger.info(f"✅ Login success: {phone}")
 
     return schemas.TokenResponse(
         success=True,
@@ -128,7 +152,6 @@ async def select_account_type(
 
     user.account_type = AccountType(payload.account_type)
 
-    # Role set karo
     if payload.account_type == "shop":
         user.role = UserRole.SHOPKEEPER
     elif payload.account_type == "medical":
@@ -215,7 +238,6 @@ async def shop_verify_layer2(
     if not verification or verification.current_layer < 1:
         raise ValidationException("Complete layer 1 first")
 
-    # Shop ID verify karo
     shop_result = await db.execute(
         select(Verification).where(
             Verification.shop_id == payload.shop_id,
@@ -231,7 +253,6 @@ async def shop_verify_layer2(
     verification.status = VerificationStatus.APPROVED
     verification.is_verified = True
 
-    # User verified mark karo
     user_result = await db.execute(
         select(User).where(User.id == user_id)
     )
@@ -282,7 +303,6 @@ async def medical_verify_layer(
             f"Complete layer {verification.current_layer} first"
         )
 
-    # Har layer ka data save karo
     if layer == 1:
         verification.license_number = data.get("license_number")
         verification.status = VerificationStatus.LAYER_1
@@ -296,12 +316,10 @@ async def medical_verify_layer(
         verification.documents = data.get("documents")
         verification.status = VerificationStatus.LAYER_4
     elif layer == 5:
-        # Layer 5 = Admin approval pending
         verification.status = VerificationStatus.LAYER_5
 
     verification.current_layer = layer
 
-    # Layer 5 complete = Admin approval wait
     if layer == 5:
         await db.commit()
         return {
@@ -342,7 +360,6 @@ async def admin_login_layer1(
     if not verify_password(payload.password, admin.hashed_password):
         raise AuthException("Invalid credentials")
 
-    # Layer 1 passed — OTP bhejo
     user_result = await db.execute(
         select(User).where(User.id == admin.user_id)
     )
@@ -350,7 +367,11 @@ async def admin_login_layer1(
 
     if user and user.phone:
         otp = generate_otp()
-        await redis.setex(f"admin_otp:{admin.username}", 600, otp)
+        await redis.setex(
+            f"admin_otp:{admin.username}",
+            600,
+            str(otp)
+        )
         msg = f"TanzeelKart Admin OTP: {otp}. Valid 10 min."
         background_tasks.add_task(send_sms, user.phone, msg)
 
@@ -366,8 +387,13 @@ async def admin_login_layer2(
     db: AsyncSession,
     redis: aioredis.Redis,
 ) -> dict:
-    stored_otp = await redis.get(f"admin_otp:{payload.username}")
-    if not stored_otp or stored_otp != payload.otp:
+    stored_otp = await redis.get(
+        f"admin_otp:{payload.username}"
+    )
+
+    # String comparison
+    if not stored_otp or \
+       str(stored_otp).strip() != str(payload.otp).strip():
         raise AuthException("Invalid or expired OTP")
 
     await redis.delete(f"admin_otp:{payload.username}")
@@ -379,7 +405,6 @@ async def admin_login_layer2(
     if not admin:
         raise AuthException("Admin not found")
 
-    # Biometric enabled hai?
     if admin.biometric_enabled:
         await redis.setex(
             f"admin_biometric_pending:{payload.username}",
@@ -393,7 +418,6 @@ async def admin_login_layer2(
             "biometric_required": True
         }
 
-    # Biometric nahi hai — directly token do
     return await _create_admin_token(admin, db)
 
 
@@ -415,15 +439,19 @@ async def admin_login_layer3_biometric(
     if not admin:
         raise AuthException("Admin not found")
 
-    # Biometric verify karo
     if payload.biometric_token != admin.biometric_key:
         raise AuthException("Biometric verification failed")
 
-    await redis.delete(f"admin_biometric_pending:{payload.username}")
+    await redis.delete(
+        f"admin_biometric_pending:{payload.username}"
+    )
     return await _create_admin_token(admin, db)
 
 
-async def _create_admin_token(admin: Admin, db: AsyncSession) -> dict:
+async def _create_admin_token(
+    admin: Admin,
+    db: AsyncSession
+) -> dict:
     from datetime import datetime
     admin.last_login = datetime.utcnow()
     await db.commit()
@@ -478,5 +506,7 @@ async def logout(
 ) -> dict:
     token_data = decode_token(payload.refresh_token)
     if token_data:
-        await redis.delete(f"refresh:{token_data.get('sub')}")
+        await redis.delete(
+            f"refresh:{token_data.get('sub')}"
+        )
     return {"success": True, "message": "Logged out"}
