@@ -38,6 +38,30 @@ async def select_account_type(
 ):
     return await service.select_account_type(payload, db)
 
+# ── Email Register ────────────────────────
+@router.post("/email/register")
+async def email_register(
+    payload: schemas.EmailRegisterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.email_register(payload, db)
+
+
+# ── Email Login ───────────────────────────
+@router.post("/email/login")
+async def email_login(
+    payload: schemas.EmailLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.email_login(payload, db)
+
+
+# ── Guest Login ───────────────────────────
+@router.post("/guest/login")
+async def guest_login(
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.guest_login(db)
 
 # ── Shop Verification ────────────────────
 @router.post("/shop-verify/layer-1")
