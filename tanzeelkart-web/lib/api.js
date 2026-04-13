@@ -126,15 +126,14 @@ export const authAPI = {
       username,
       otp
     }),
-  
-  // Email + Guest
-emailRegister: (data) =>
+
+  emailRegister: (data) =>
     api.post('/api/v1/auth/email/register', data),
 
-emailLogin: (data) =>
+  emailLogin: (data) =>
     api.post('/api/v1/auth/email/login', data),
 
-guestLogin: () =>
+  guestLogin: () =>
     api.post('/api/v1/auth/guest/login'),
 
   logout: (refresh_token) =>
