@@ -6,19 +6,22 @@ import re
 
 async def send_sms(phone: str, message: str) -> bool:
     try:
-        # OTP extract karo message se
+        # OTP extract karo
         otp_match = re.search(r'\d{6}', message)
-        otp = otp_match.group() if otp_match else message
+        otp = otp_match.group() if otp_match else "000000"
+
+        full_message = f"TanzeelKart OTP: {otp}. Valid 10 min. -QalbConverfy"
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
+            response = await client.get(
                 "https://www.fast2sms.com/dev/bulkV2",
                 headers={
                     "authorization": settings.SMS_API_KEY,
                 },
                 params={
-                    "route": "otp",
-                    "variables_values": otp,
+                    "route": "q",
+                    "message": full_message,
+                    "language": "english",
                     "flash": 0,
                     "numbers": phone,
                 },
@@ -28,7 +31,7 @@ async def send_sms(phone: str, message: str) -> bool:
             logger.info(f"Fast2SMS response: {data}")
 
             if data.get("return") == True:
-                logger.info(f"✅ OTP sent to {phone}")
+                logger.info(f"✅ SMS sent to {phone}")
                 return True
             else:
                 logger.error(f"❌ SMS failed: {data}")
