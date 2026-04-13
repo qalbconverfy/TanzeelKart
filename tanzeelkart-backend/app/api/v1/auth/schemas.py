@@ -110,3 +110,28 @@ class RefreshTokenRequest(BaseModel):
 
 class LogoutRequest(BaseModel):
     refresh_token: str
+
+
+class EmailLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class EmailRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError("Password 6+ characters hona chahiye")
+        return v
+
+class GuestLoginResponse(BaseModel):
+    success: bool
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user_id: str
+    is_guest: bool = True
