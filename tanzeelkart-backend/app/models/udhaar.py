@@ -1,6 +1,7 @@
 from sqlalchemy import (
     Column, Float, Enum,
-    Text, Boolean, DateTime, String
+    Text, Boolean, DateTime,
+    String, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -19,10 +20,24 @@ class UdhaarStatus(str, enum.Enum):
 class Udhaar(BaseModel):
     __tablename__ = "udhaar"
 
-    # Relations
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    shop_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    order_id = Column(UUID(as_uuid=True), nullable=True)
+    # Relations ← ForeignKey add kiye
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    shop_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shops.id"),
+        nullable=False,
+        index=True
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id"),
+        nullable=True
+    )
 
     # Amount
     total_amount = Column(Float, nullable=False)
@@ -42,8 +57,12 @@ class Udhaar(BaseModel):
 
     # Sunday Collection
     is_sunday_collection = Column(Boolean, default=False)
-    sunday_collected_by = Column(UUID(as_uuid=True), nullable=True)
-    sunday_collected_at = Column(DateTime(timezone=True), nullable=True)
+    sunday_collected_by = Column(
+        UUID(as_uuid=True), nullable=True
+    )
+    sunday_collected_at = Column(
+        DateTime(timezone=True), nullable=True
+    )
     collection_notes = Column(Text, nullable=True)
 
     # Relationships
@@ -54,17 +73,19 @@ class Udhaar(BaseModel):
 class DeliveryChargeAccount(BaseModel):
     __tablename__ = "delivery_charge_accounts"
 
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
 
-    # Accumulated charges
     total_accumulated = Column(Float, default=0.0)
     total_paid = Column(Float, default=0.0)
     pending_amount = Column(Float, default=0.0)
-
-    # Discount
     discount_percentage = Column(Float, default=0.0)
     discount_milestone = Column(String(50), nullable=True)
-
-    # Sunday collection
     is_sunday_pending = Column(Boolean, default=False)
-    last_sunday_collected = Column(DateTime(timezone=True), nullable=True)
+    last_sunday_collected = Column(
+        DateTime(timezone=True), nullable=True
+    )
