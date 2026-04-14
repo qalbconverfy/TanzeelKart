@@ -1,8 +1,9 @@
 from sqlalchemy import (
     Column, String, Float,
-    Boolean, Text, Integer, Enum
+    Boolean, Text, Integer, Enum,
+    ForeignKey
 )
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
 from app.models.base import BaseModel
@@ -32,7 +33,14 @@ class Shop(BaseModel):
     # Basic
     name = Column(String(200), nullable=False, index=True)
     description = Column(Text, nullable=True)
-    owner_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    # ← ForeignKey add kiya
+    owner_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
 
     # Category
     category = Column(
@@ -82,4 +90,3 @@ class Shop(BaseModel):
     owner = relationship("User", back_populates="shop")
     products = relationship("Product", back_populates="shop")
     orders = relationship("Order", back_populates="shop")
-    
