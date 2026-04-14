@@ -1,5 +1,5 @@
 from app.models.base import BaseModel
-from app.models.user import User, UserRole, UserStatus
+from app.models.user import User, UserRole, UserStatus, AccountType
 from app.models.shop import Shop, ShopCategory, ShopStatus
 from app.models.product import Product, ProductStatus, ProductUnit
 from app.models.order import Order, OrderStatus, PaymentMethod, PaymentStatus
