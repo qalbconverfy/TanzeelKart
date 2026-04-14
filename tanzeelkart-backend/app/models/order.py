@@ -1,6 +1,7 @@
 from sqlalchemy import (
     Column, String, Float,
-    Integer, Enum, Text, Boolean
+    Integer, Enum, Text,
+    Boolean, ForeignKey
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -35,10 +36,23 @@ class PaymentStatus(str, enum.Enum):
 class Order(BaseModel):
     __tablename__ = "orders"
 
-    # Relations
-    buyer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    shop_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    delivery_id = Column(UUID(as_uuid=True), nullable=True)
+    # Relations ← ForeignKey add kiye
+    buyer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+    shop_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shops.id"),
+        nullable=False,
+        index=True
+    )
+    delivery_id = Column(
+        UUID(as_uuid=True),
+        nullable=True
+    )
 
     # Amount
     subtotal = Column(Float, nullable=False)
@@ -47,7 +61,9 @@ class Order(BaseModel):
     total_amount = Column(Float, nullable=False)
 
     # Delivery Charge Logic
-    delivery_charge_added_to_account = Column(Boolean, default=False)
+    delivery_charge_added_to_account = Column(
+        Boolean, default=False
+    )
     is_below_threshold = Column(Boolean, default=False)
 
     # Payment
@@ -82,9 +98,20 @@ class Order(BaseModel):
     cancellation_reason = Column(Text, nullable=True)
 
     # Relationships
-    buyer = relationship("User", back_populates="orders")
+    buyer = relationship(
+        "User",
+        back_populates="orders",
+        foreign_keys=[buyer_id]
+    )
     shop = relationship("Shop", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
-    delivery = relationship("Delivery", back_populates="order")
-    udhaar = relationship("Udhaar", back_populates="order", uselist=False)
-    
+    delivery = relationship(
+        "Delivery",
+        back_populates="order",
+        uselist=False
+    )
+    udhaar = relationship(
+        "Udhaar",
+        back_populates="order",
+        uselist=False
+    )
