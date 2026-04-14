@@ -30,4 +30,3 @@ class BaseModel(Base, TimeStampMixin):
     )
     is_active = Column(Boolean, default=True, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
-    
