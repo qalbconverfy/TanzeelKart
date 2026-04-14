@@ -21,7 +21,7 @@ class NotificationType(str, enum.Enum):
 
 class Notification(BaseModel):
     __tablename__ = "notifications"
-
+    __table_args__ = {'extend_existing': True}
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     title = Column(String(200), nullable=False)
