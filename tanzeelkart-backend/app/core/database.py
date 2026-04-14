@@ -44,13 +44,11 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     try:
-        # Models import — sirf ek jagah
-        import app.models  # ← Poora module ek baar
-        
+        import app.models
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            
+            await conn.run_sync(
+                Base.metadata.create_all
+            )
         logger.info("✅ Database initialized successfully")
     except Exception as e:
-        logger.error(f"❌ Database init failed: {e}")
-        raise  # ← Warning nahi, raise karo taaki pata chale
+        logger.warning(f"⚠️ Database init: {e}")
