@@ -9,9 +9,6 @@ from app.core.config import settings
 from loguru import logger
 
 
-# Async Engine
-from sqlalchemy.pool import NullPool
-
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
@@ -19,7 +16,6 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
-# Session Factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -29,12 +25,10 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-# Base Model
 class Base(DeclarativeBase):
     pass
 
 
-# Dependency
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
         try:
@@ -48,8 +42,18 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-# Init DB
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("✅ Database initialized successfully")
+    try:
+        # Sab models import karo pehle
+        from app.models import (
+            User, Shop, Product,
+            Order, OrderItem, Delivery,
+            Udhaar, DeliveryChargeAccount,
+            Notification, Verification,
+            ShopIDCounter, Admin
+        )
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Database init: {e}")
