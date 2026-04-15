@@ -1,62 +1,81 @@
 from fastapi import HTTPException, status
+from typing import Optional, Any
 
 
-class TanzeelKartException(HTTPException):
-    pass
+class AppException(HTTPException):
+    def __init__(
+        self,
+        status_code: int,
+        detail: str,
+        headers: Optional[dict] = None,
+    ):
+        super().__init__(
+            status_code=status_code,
+            detail=detail,
+            headers=headers,
+        )
 
 
-class AuthException(TanzeelKartException):
+class AuthException(AppException):
     def __init__(self, detail: str = "Authentication failed"):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=detail,
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
-class PermissionException(TanzeelKartException):
-    def __init__(self, detail: str = "Permission denied"):
+class ForbiddenException(AppException):
+    def __init__(self, detail: str = "Access denied"):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail
+            detail=detail,
         )
 
 
-class NotFoundException(TanzeelKartException):
-    def __init__(self, detail: str = "Resource not found"):
+class NotFoundException(AppException):
+    def __init__(self, detail: str = "Not found"):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=detail
+            detail=detail,
         )
 
 
-class ValidationException(TanzeelKartException):
-    def __init__(self, detail: str = "Validation error"):
-        super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=detail
-        )
-
-
-class DuplicateException(TanzeelKartException):
-    def __init__(self, detail: str = "Resource already exists"):
+class ConflictException(AppException):
+    def __init__(self, detail: str = "Already exists"):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
-            detail=detail
+            detail=detail,
         )
 
 
-class PaymentException(TanzeelKartException):
+class ValidationException(AppException):
+    def __init__(self, detail: str = "Validation failed"):
+        super().__init__(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=detail,
+        )
+
+
+class PaymentException(AppException):
     def __init__(self, detail: str = "Payment failed"):
         super().__init__(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=detail
+            detail=detail,
         )
 
 
-class DeliveryException(TanzeelKartException):
-    def __init__(self, detail: str = "Delivery error"):
+class RateLimitException(AppException):
+    def __init__(self, detail: str = "Too many requests"):
         super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=detail,
+        )
+
+
+class ServerException(AppException):
+    def __init__(self, detail: str = "Internal server error"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
         )
