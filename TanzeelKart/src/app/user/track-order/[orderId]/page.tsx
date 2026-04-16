@@ -5,6 +5,7 @@ import { IUser } from '@/models/user.model'
 import { RootState } from '@/redux/store'
 import axios from 'axios'
 import { ArrowLeft, Loader, Send, Sparkle } from 'lucide-react'
+
 import { useParams, useRouter } from 'next/navigation'
 import {AnimatePresence, motion} from "motion/react"
 import React, { useEffect, useRef, useState } from 'react'
@@ -241,9 +242,14 @@ onClick={getSuggestion}
       </div>
 
     </div>
-    </div>
+
+
+
+
+           </div>
       </div>
     </div>
   )
 }
+
 export default TrackOrder
