@@ -1,17 +1,19 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 import secrets
-import pyotp
+import string
+
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto"
+)
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
 
 
 def get_password_hash(password: str) -> str:
@@ -20,59 +22,63 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     subject: Union[str, int],
-    expires_delta: Optional[timedelta] = None
+    extra: Optional[dict] = None,
 ) -> str:
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
     payload = {
         "sub": str(subject),
         "exp": expire,
+        "iat": now,
         "type": "access",
-        "iat": datetime.utcnow()
     }
+    if extra:
+        payload.update(extra)
     return jwt.encode(
         payload,
         settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        algorithm=settings.JWT_ALGORITHM,
     )
 
 
-def create_refresh_token(subject: Union[str, int]) -> str:
-    expire = datetime.utcnow() + timedelta(
+def create_refresh_token(
+    subject: Union[str, int],
+) -> str:
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )
-    payload = {
-        "sub": str(subject),
-        "exp": expire,
-        "type": "refresh",
-        "iat": datetime.utcnow()
-    }
     return jwt.encode(
-        payload,
+        {
+            "sub": str(subject),
+            "exp": expire,
+            "iat": now,
+            "type": "refresh",
+        },
         settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        algorithm=settings.JWT_ALGORITHM,
     )
 
 
 def decode_token(token: str) -> Optional[dict]:
     try:
-        payload = jwt.decode(
+        return jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            algorithms=[settings.JWT_ALGORITHM],
         )
-        return payload
     except JWTError:
         return None
 
 
-def generate_otp() -> str:
-    return str(secrets.randbelow(900000) + 100000)
+def generate_otp(length: int = 6) -> str:
+    return "".join(
+        secrets.choice(string.digits)
+        for _ in range(length)
+    )
 
 
-def generate_secret_key() -> str:
+def generate_secret() -> str:
     return secrets.token_urlsafe(32)
