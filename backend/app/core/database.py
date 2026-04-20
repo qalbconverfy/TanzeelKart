@@ -45,7 +45,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     try:
-        from app.models import all_models  # noqa
+        # Import all models explicitly
+        import app.models.user  # noqa
+        import app.models.shop  # noqa
+        import app.models.product  # noqa
+        import app.models.order  # noqa
+        import app.models.order_item  # noqa
+        import app.models.delivery  # noqa
+        import app.models.wallet  # noqa
+        import app.models.udhaar  # noqa
+        import app.models.notification  # noqa
+        import app.models.verification  # noqa
+        import app.models.admin  # noqa
+
         async with engine.begin() as conn:
             await conn.run_sync(
                 Base.metadata.create_all
