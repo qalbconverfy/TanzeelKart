@@ -1,4 +1,4 @@
-
+# Import order matters — base first, then models
 from app.models.base import BaseModel
 from app.models.user import (
     User, UserRole, UserStatus,
@@ -36,16 +36,6 @@ from app.models.verification import (
 )
 from app.models.admin import Admin
 
-# This is imported by database.py
-# to ensure all models are registered
-all_models = [
-    User, Shop, Product,
-    Order, OrderItem, Delivery,
-    Wallet, WalletTransaction,
-    Udhaar, DeliveryChargeAccount,
-    Notification, Verification, Admin,
-]
-
 __all__ = [
     "BaseModel",
     "User", "UserRole", "UserStatus",
@@ -64,5 +54,4 @@ __all__ = [
     "Verification", "VerificationStatus",
     "VerificationType",
     "Admin",
-    "all_models",
 ]
